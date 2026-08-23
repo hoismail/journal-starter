@@ -44,6 +44,18 @@ module "database" {
   db_password          = var.db_password
 }
 
+module "observability" {
+  source = "./modules/observability"
+
+  namespace             = "monitoring"
+  loki_values           = file("${path.module}/../k8s/observability/loki-values.yaml")
+  otel_collector_values = file("${path.module}/../k8s/observability/otel-collector-values.yaml")
+
+  depends_on = [
+    module.eks
+  ]
+}
+
 resource "kubernetes_secret_v1" "journal_api_db_secret" {
   metadata {
     name = "journal-api-db-secret"
