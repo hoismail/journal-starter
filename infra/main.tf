@@ -44,3 +44,42 @@ module "database" {
   db_password          = var.db_password
 }
 
+resource "kubernetes_secret_v1" "journal_api_db_secret" {
+  metadata {
+    name = "journal-api-db-secret"
+  }
+
+  type = "Opaque"
+
+  data = {
+    DATABASE_HOST     = split(":", module.database.db_endpoint)[0]
+    DATABASE_PORT     = "5432"
+    DATABASE_NAME     = var.db_name
+    DATABASE_USER     = var.db_username
+    DATABASE_PASSWORD = var.db_password
+  }
+}
+
+resource "kubernetes_secret_v1" "journal_api_secrets" {
+  metadata {
+    name = "journal-api-secrets"
+  }
+
+  type = "Opaque"
+
+  data = {
+    DATABASE_URL   = module.database.db_connection_string
+    OPENAI_API_KEY = var.openai_api_key
+  }
+}
+
+resource "kubernetes_config_map_v1" "database_setup_sql" {
+  metadata {
+    name = "database-setup-sql"
+  }
+
+  data = {
+    "database_setup.sql" = file("${path.module}/../database_setup.sql")
+  }
+}
+
