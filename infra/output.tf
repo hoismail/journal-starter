@@ -28,9 +28,3 @@ output "db_port" {
   value       = module.database.db_port
 }
 
-output "db_connection_string" {
-  description = "The connection string for the RDS database"
-  value       = "postgresql://${var.db_username}:${var.db_password}@${module.database.db_endpoint}:${module.database.db_port}/${var.db_name}"
-  sensitive   = true
-}
-
