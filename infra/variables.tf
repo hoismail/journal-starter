@@ -88,14 +88,23 @@ variable "db_allocated_storage" {
 variable "db_username" {
   description = "The username for the RDS database"
   type        = string
+  sensitive   = true
 }
 
 variable "db_password" {
   description = "The password for the RDS database"
   type        = string
+  sensitive   = true
+}
+
+variable "openai_api_key" {
+  description = "OpenAI API key used by the Journal API"
+  type        = string
+  sensitive   = true
 }
 
 variable "github_actions_role_arn" {
   description = "The ARN of the GitHub Actions role for EKS access"
   type        = string
 }
+
