@@ -176,8 +176,3 @@ resource "aws_eks_node_group" "journal-api-nodes" {
 
   instance_types = [var.eks_node_instance_type]
 }
-
-import {
-  to = aws_eks_access_entry.github_actions
-  id = "journal-api-eks-cluster:arn:aws:iam::744763865781:role/JournalApiGitHubTerraformRole"
-}
