@@ -174,3 +174,4 @@ cython_debug/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
+infra/secrets.auto.tfvars

@@ -12,6 +12,19 @@ resource "helm_release" "kube_prometheus_stack" {
   skip_crds  = false
 }
 
+resource "kubernetes_storage_class_v1" "gp3" {
+  metadata {
+    name = "gp3"
+  }
+
+  storage_provisioner = "ebs.csi.aws.com"
+  volume_binding_mode = "WaitForFirstConsumer"
+
+  parameters = {
+    type = "gp3"
+  }
+}
+
 resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
@@ -20,6 +33,10 @@ resource "helm_release" "loki" {
 
   values = [
     var.loki_values
+  ]
+
+  depends_on = [
+    kubernetes_storage_class_v1.gp3
   ]
 }
 
