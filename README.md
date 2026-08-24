@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Journal API is an end-to-end cloud and DevOps engineering project demonstrating the evolution of a Python FastAPI application from local application development through traditional cloud deployment and ultimately into a containerized, Kubernetes-based platform on AWS.
+Journal API is an end-to-end DevOps engineering project demonstrating the evolution of a Python FastAPI application from local application development through traditional cloud deployment and ultimately into a containerized, Kubernetes-based platform on AWS.
 
 The project covers the full application and infrastructure lifecycle, including application development, automated testing, containerization, Infrastructure as Code, CI/CD, Kubernetes orchestration, managed databases, networking, and observability.
 
