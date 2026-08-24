@@ -8,23 +8,51 @@ The project covers the full application and infrastructure lifecycle, including 
 
 The final architecture uses Docker, Amazon ECR, Amazon EKS, Amazon RDS, Terraform, GitHub Actions, and the LGTM observability stack with OpenTelemetry.
 
+---
+
+## Table of Contents
+
+* [Journal API](#journal-api)
+* [Architecture](#architecture)
+* [Application Features](#application-features)
+* [Technology Stack](#technology-stack)
+* [Local Development](#local-development)
+* [DevOps Workflow](#devops-workflow)
+* [Kubernetes Deployment](#kubernetes-deployment)
+* [CI/CD Pipeline](#cicd-pipeline)
+* [Infrastructure as Code](#infrastructure-as-code)
+
+  * [Terraform State Management](#terraform-state-management)
+* [Observability](#observability)
+
+  * [Prometheus](#prometheus)
+  * [Grafana](#grafana)
+  * [Loki](#loki)
+  * [Tempo](#tempo)
+  * [OpenTelemetry](#opentelemetry)
+* [AWS Infrastructure](#aws-infrastructure)
+* [Repository Structure](#repository-structure)
+* [Original EC2 Deployment](#original-ec2-deployment)
+* [Key DevOps Concepts Demonstrated](#key-devops-concepts-demonstrated)
+* [Project Attribution](#project-attribution)
+* [Project Goal](#project-goal)
 
 ---
 
 # Journal API
 
 <p align="center">
-  <img src="docs/Journal API Application.png" alt="AWS Two-Tier Architecture" width="1000">
+  <img src="docs/Journal API Application.png" alt="Journal API Application" width="1000">
 </p>
 
---- 
+---
 
 # Architecture
 
 <br>
 
 <p align="center">
-  <img src="docs/Architecture.png" alt="AWS Two-Tier Architecture" width="1000">
+  <img src="docs/Architecture.png" alt="AWS Journal API Architecture" width="1000">
 </p>
 
 <br>
@@ -47,6 +75,140 @@ For a low-traffic production workload where cost and operational simplicity were
 
 ---
 
+# Application Features
+
+The Journal API provides REST API functionality for creating and managing journal entries.
+
+Application functionality includes:
+
+* Create journal entries
+* Retrieve journal entries
+* Retrieve individual entries
+* Update journal entries
+* Delete journal entries
+* Input validation
+* AI-assisted journal analysis
+* Application logging
+* Health monitoring
+* Prometheus metrics
+* OpenTelemetry instrumentation
+
+---
+
+# Technology Stack
+
+| Category               | Technology                  |
+| ---------------------- | --------------------------- |
+| Backend                | FastAPI                     |
+| Application Server     | Uvicorn                     |
+| Language               | Python 3.12                 |
+| Database               | PostgreSQL / Amazon RDS     |
+| Package Management     | uv                          |
+| Cloud Platform         | AWS                         |
+| Containers             | Docker                      |
+| Container Registry     | Amazon ECR                  |
+| Orchestration          | Kubernetes                  |
+| Managed Kubernetes     | Amazon EKS                  |
+| Kubernetes Packaging   | Helm                        |
+| Infrastructure as Code | Terraform                   |
+| CI/CD                  | GitHub Actions              |
+| DNS                    | Amazon Route 53             |
+| TLS                    | AWS Certificate Manager     |
+| Load Balancing         | AWS Elastic Load Balancing  |
+| Persistent Storage     | Amazon EBS / EBS CSI Driver |
+| Metrics                | Prometheus                  |
+| Visualization          | Grafana                     |
+| Logging                | Loki                        |
+| Tracing                | Tempo                       |
+| Telemetry              | OpenTelemetry               |
+| Version Control        | Git & GitHub                |
+
+---
+
+# Local Development
+
+## Prerequisites
+
+Install the following before running the application locally:
+
+* Git
+* Python 3.12+
+* `uv`
+* Docker Desktop
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/hoismail/journal-starter.git
+cd journal-starter
+```
+
+### 2. Configure Environment Variables
+
+Create a local environment file from the provided sample:
+
+```bash
+cp .env-sample .env
+```
+
+Update `.env` with the required values, including the PostgreSQL connection information and OpenAI API key.
+
+Do not commit `.env` or other files containing credentials.
+
+### 3. Install Dependencies
+
+```bash
+uv sync
+```
+
+### 4. Start PostgreSQL
+
+The application requires PostgreSQL.
+
+The repository includes `database_setup.sql` for initializing the database.
+
+When using the included VS Code Dev Container configuration, the development PostgreSQL service is provisioned automatically.
+
+### 5. Run the Application
+
+```bash
+uv run uvicorn api.main:app --reload
+```
+
+The API is available at:
+
+```text
+http://localhost:8000
+```
+
+Interactive API documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+Health check:
+
+```text
+http://localhost:8000/health
+```
+
+Prometheus metrics:
+
+```text
+http://localhost:8000/metrics
+```
+
+### 6. Run Tests and Code Quality Checks
+
+```bash
+uv run pytest
+uv run ruff check .
+uv run pyright
+```
+
+---
+
 # DevOps Workflow
 
 The application follows an automated CI/CD workflow using GitHub Actions.
@@ -54,9 +216,9 @@ The application follows an automated CI/CD workflow using GitHub Actions.
 When application changes are pushed through the development workflow, GitHub Actions performs the following stages:
 
 1. Runs automated tests and code-quality checks.
-2. Builds the Journal API Docker image.
-3. Authenticates to AWS using GitHub Actions OIDC.
-4. Pushes the container image to Amazon ECR.
+2. Validates that the Docker image builds successfully.
+3. Authenticates to AWS using GitHub Actions OIDC during deployment.
+4. Builds and pushes the production container image to Amazon ECR.
 5. Connects to the Amazon EKS cluster.
 6. Updates the Kubernetes deployment.
 7. Kubernetes performs a rolling deployment of the new application version.
@@ -72,7 +234,7 @@ Code Change
      v
 GitHub Actions
      |
-     +--> Test
+     +--> Test / Lint
      |
      +--> Docker Build
      |
@@ -98,13 +260,15 @@ The application is packaged as a Docker image and stored in Amazon Elastic Conta
 The Kubernetes deployment includes:
 
 * Application Deployment
-* Multiple application pods
+* Application pods
 * Kubernetes Service
 * AWS Load Balancer integration
 * Liveness probes
 * Readiness probes
+* CPU and memory requests and limits
 * Environment configuration
 * Rolling deployments
+* OpenTelemetry configuration
 
 The application exposes:
 
@@ -120,8 +284,8 @@ The `/health` endpoint is used by Kubernetes health probes, while `/metrics` exp
 # CI/CD Pipeline
 
 <p align="center">
-  <img src="docs/CI.png" alt="Grafana Kubernetes API Server" width="49%">
-  <img src="docs/Deploy.png" alt="Journal API" width="49%">
+  <img src="docs/CI.png" alt="GitHub Actions CI Workflow" width="49%">
+  <img src="docs/Deploy.png" alt="GitHub Actions Deployment Workflow" width="49%">
 </p>
 
 GitHub Actions automates application validation, container deployment, and Terraform infrastructure workflows.
@@ -146,6 +310,47 @@ The **Terraform CI** workflow validates and plans infrastructure changes, while 
 
 GitHub Actions uses **OpenID Connect (OIDC)** and IAM roles to authenticate with AWS without storing long-lived AWS access keys.
 
+---
+
+# Infrastructure as Code
+
+AWS infrastructure is managed with Terraform.
+
+The Terraform configuration is separated into reusable modules:
+
+```text
+infra/
+├── backend.tf
+├── providers.tf
+├── variables.tf
+├── output.tf
+├── main.tf
+└── modules/
+    ├── network/
+    ├── eks/
+    ├── database/
+    └── observability/
+```
+
+This makes the infrastructure repeatable, reviewable, and easier to reproduce.
+
+## Terraform State Management
+
+Terraform state is stored remotely in Amazon S3 rather than being maintained locally.
+
+The backend infrastructure is separated from the main application infrastructure because the S3 state bucket must exist before Terraform can initialize and use it as a remote backend.
+
+A dedicated `bootstrap/` Terraform configuration provisions the state bucket with:
+
+* S3 versioning for state recovery
+* Server-side encryption
+* Public access blocking
+
+The main Terraform configuration in `infra/` uses this bucket through an S3 backend defined in `backend.tf`.
+
+S3-native state locking is enabled to prevent concurrent Terraform operations from modifying the state at the same time.
+
+Separating the backend infrastructure from the application infrastructure provides a reliable foundation for managing Terraform state while keeping the main AWS infrastructure reproducible and version controlled.
 
 ---
 
@@ -172,8 +377,8 @@ Metrics include application request activity and infrastructure telemetry.
 <br>
 
 <p align="center">
-  <img src="docs/grafana - Kubernetes API server.png" alt="Grafana Kubernetes API Server" width="49%">
-  <img src="docs/grafana - Journal API.png" alt="Journal API" width="49%">
+  <img src="docs/grafana - Kubernetes API server.png" alt="Grafana Kubernetes API Server Dashboard" width="49%">
+  <img src="docs/grafana - Journal API.png" alt="Grafana Journal API Dashboard" width="49%">
 </p>
 
 <br>
@@ -244,117 +449,24 @@ Traces   -> Tempo
 
 # AWS Infrastructure
 
-The project uses several AWS services to provide compute, networking, container hosting, database services, security, and traffic management.
+The project uses several AWS services to provide compute, networking, container hosting, database services, security, storage, and traffic management.
 
-| AWS Service            | Purpose                             |
-| ---------------------- | ----------------------------------- |
-| Amazon EKS             | Managed Kubernetes cluster          |
-| Amazon ECR             | Docker container image registry     |
-| Amazon RDS             | Managed PostgreSQL database         |
-| Amazon EC2             | EKS worker node compute             |
-| Amazon VPC             | Network isolation                   |
-| Elastic Load Balancing | External application traffic        |
-| Route 53               | DNS                                 |
-| AWS Certificate Manager| TLS certificates                    |
-| S3                     | Terraform remote state              |
-| IAM                    | AWS permissions and workload access |
-| Security Groups        | Network access control              |
-
+| AWS Service             | Purpose                             |
+| ----------------------- | ----------------------------------- |
+| Amazon EKS              | Managed Kubernetes cluster          |
+| Amazon ECR              | Docker container image registry     |
+| Amazon RDS              | Managed PostgreSQL database         |
+| Amazon EC2              | EKS worker node compute             |
+| Amazon VPC              | Network isolation                   |
+| Amazon EBS              | Kubernetes persistent storage       |
+| Elastic Load Balancing  | External application traffic        |
+| Route 53                | DNS                                 |
+| AWS Certificate Manager | TLS certificates                    |
+| Amazon S3               | Terraform remote state              |
+| IAM                     | AWS permissions and workload access |
+| Security Groups         | Network access control              |
 
 The environment uses multiple Availability Zones with public and private networking to provide workload isolation and improved availability.
-
----
-
-## Technology Stack
-
-| Category | Technology |
-| --- | --- |
-| Backend | FastAPI |
-| Application Server | Uvicorn |
-| Language | Python 3.12 |
-| Database | PostgreSQL / Amazon RDS |
-| Package Management | uv |
-| Cloud Platform | AWS |
-| Containers | Docker |
-| Container Registry | Amazon ECR |
-| Orchestration | Kubernetes |
-| Managed Kubernetes | Amazon EKS |
-| Kubernetes Packaging | Helm |
-| Infrastructure as Code | Terraform |
-| CI/CD | GitHub Actions |
-| DNS | Amazon Route 53 |
-| TLS | AWS Certificate Manager |
-| Load Balancing | AWS Elastic Load Balancing |
-| Persistent Storage | Amazon EBS / EBS CSI Driver |
-| Metrics | Prometheus |
-| Visualization | Grafana |
-| Logging | Loki |
-| Tracing | Tempo |
-| Telemetry | OpenTelemetry |
-| Version Control | Git & GitHub |
-
-
----
-
-# Infrastructure as Code
-
-AWS infrastructure is managed with Terraform.
-
-The Terraform configuration is separated into reusable modules:
-
-```text
-infra/
-├── backend.tf
-├── providers.tf
-├── variables.tf
-├── output.tf
-├── main.tf
-└── modules/
-    ├── network/
-    ├── eks/
-    ├── database/
-    └── observability/
-```
-
-This makes the infrastructure repeatable, reviewable, and easier to reproduce.
-
-## Terraform State Management
-
-Terraform state is stored remotely in Amazon S3 rather than being maintained locally.
-
-The backend infrastructure is separated from the main application infrastructure because the S3 state bucket must exist before Terraform can initialize and use it as a remote backend.
-
-A dedicated `bootstrap/` Terraform configuration provisions the state bucket with:
-
-* S3 versioning for state recovery
-* Server-side encryption
-* Public access blocking
-
-The main Terraform configuration in `infra/` uses this bucket through an S3 backend defined in `backend.tf`.
-
-S3-native state locking is enabled to prevent concurrent Terraform operations from modifying the state at the same time.
-
-Separating the backend infrastructure from the application infrastructure provides a reliable foundation for managing Terraform state while keeping the main AWS infrastructure reproducible and version controlled.
-
----
-
-# Application Features
-
-The Journal API provides REST API functionality for creating and managing journal entries.
-
-Application functionality includes:
-
-* Create journal entries
-* Retrieve journal entries
-* Retrieve individual entries
-* Update journal entries
-* Delete journal entries
-* Input validation
-* AI-assisted journal analysis
-* Application logging
-* Health monitoring
-* Prometheus metrics
-* OpenTelemetry instrumentation
 
 ---
 
@@ -420,40 +532,51 @@ This initial deployment established the networking and infrastructure foundation
 
 This project demonstrates hands-on implementation of:
 
-**Cloud Infrastructure**
+### Cloud Infrastructure
 
 * AWS networking and VPC design
 * Public/private subnet architecture
 * Security groups
 * IAM
 * Managed AWS services
+* DNS and TLS
+* Persistent storage
 
-**Containers & Kubernetes**
+### Containers & Kubernetes
 
 * Docker image creation
-* Container registries
+* Non-root container execution
+* Amazon ECR
 * Kubernetes Deployments and Services
 * Pod scheduling
-* Health checks
+* Resource requests and limits
+* Liveness and readiness probes
 * Rolling deployments
 * Amazon EKS
+* AWS EBS CSI Driver
 
-**CI/CD**
+### CI/CD
 
 * Automated testing
-* Docker image builds
+* Code-quality validation
+* Docker image build validation
 * Amazon ECR publishing
 * Automated Kubernetes deployments
 * GitHub Actions
 * AWS OIDC authentication
+* Terraform CI/CD
 
-**Infrastructure as Code**
+### Infrastructure as Code
 
 * Terraform
+* Modular Terraform architecture
+* Remote state in Amazon S3
+* State locking
 * Repeatable AWS infrastructure
 * Version-controlled infrastructure configuration
+* Helm-managed Kubernetes infrastructure
 
-**Observability**
+### Observability
 
 * Application metrics
 * Kubernetes metrics
@@ -462,6 +585,10 @@ This project demonstrates hands-on implementation of:
 * Dashboards
 * Alerting
 * OpenTelemetry
+* Prometheus
+* Grafana
+* Loki
+* Tempo
 
 ---
 
