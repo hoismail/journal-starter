@@ -10,82 +10,11 @@ The final architecture uses Docker, Amazon ECR, Amazon EKS, Amazon RDS, Terrafor
 
 ---
 
-## Project Attribution
+## Journal API
 
-This project is based on the [Learn to Cloud Journal Starter](https://github.com/learntocloud/journal-starter) repository.
-
-The starter repository provided the foundation for the FastAPI journal application. I extended the application itself before using it as the workload for a broader cloud and DevOps engineering project.
-
-My work on the project can be divided into two main areas: **application development** and **cloud/platform engineering**.
-
-### Application Development
-
-I extended the starter application with additional API functionality and improvements to validation, logging, testing, and external service integration.
-
-Key additions include:
-
-* Added retrieval of individual journal entries by ID.
-* Added deletion of individual journal entries with appropriate HTTP responses and error handling.
-* Introduced reusable Pydantic validation models with shared string constraints, whitespace handling, empty-input prevention, and maximum-length validation.
-* Added separate request models for create and update operations.
-* Replaced print-based debugging with structured Python application logging.
-* Added AI-powered journal analysis for generating structured summaries and sentiment analysis.
-* Implemented the AI integration asynchronously and used dependency injection to keep external services testable.
-* Expanded automated test coverage with `pytest`, including mocked AI clients to avoid external API dependencies during testing.
-* Used Ruff and Pyright for linting and static type checking.
-* Developed and validated application changes through a pull-request-based workflow.
-
-### Cloud & Platform Engineering
-
-After extending the application, I evolved its deployment and operational model through several stages:
-
-```text
-FastAPI Application
-        |
-        v
-Application Feature Development
-        |
-        v
-EC2 Two-Tier Deployment
-        |
-        v
-Docker Containerization
-        |
-        v
-Amazon ECR
-        |
-        v
-Amazon EKS + Amazon RDS
-        |
-        v
-GitHub Actions CI/CD
-        |
-        v
-Terraform Infrastructure as Code
-        |
-        v
-Observability
-Prometheus + Grafana + Loki + Tempo + OpenTelemetry
-```
-
-The platform engineering work includes:
-
-* Containerizing the FastAPI application with Docker.
-* Building AWS networking using public and private subnets across multiple Availability Zones.
-* Provisioning AWS infrastructure using Terraform.
-* Migrating the application from an EC2-based deployment to Amazon EKS.
-* Using Amazon RDS for managed PostgreSQL.
-* Publishing application container images to Amazon ECR.
-* Deploying and managing the application using Kubernetes.
-* Implementing liveness and readiness health probes.
-* Building CI/CD automation using GitHub Actions.
-* Using GitHub Actions OIDC for AWS authentication instead of long-lived access keys.
-* Automating testing, container builds, ECR publishing, and Kubernetes deployments.
-* Implementing metrics with Prometheus.
-* Building dashboards and alerting with Grafana.
-* Centralizing application logs with Loki.
-* Implementing distributed tracing with Tempo.
-* Instrumenting the application and telemetry pipeline with OpenTelemetry.
+<p align="center">
+  <img src="docs/Journal API Application.png" alt="AWS Two-Tier Architecture" width="1000">
+</p>
 
 ---
 
@@ -333,54 +262,66 @@ The project uses several AWS services to provide compute, networking, container 
 | Amazon VPC             | Network isolation                   |
 | Elastic Load Balancing | External application traffic        |
 | Route 53               | DNS                                 |
+| AWS Certificate Manager| TLS certificates                    |
+| S3                     | Terraform remote state              |
 | IAM                    | AWS permissions and workload access |
 | Security Groups        | Network access control              |
+
 
 The environment uses multiple Availability Zones with public and private networking to provide workload isolation and improved availability.
 
 ---
 
-# Technology Stack
+## Technology Stack
 
-| Category               | Technology     |
-| ---------------------- | -------------- |
-| Backend                | FastAPI        |
-| Application Server     | Uvicorn        |
-| Language               | Python         |
-| Database               | PostgreSQL     |
-| Cloud Platform         | AWS            |
-| Containers             | Docker         |
-| Container Registry     | Amazon ECR     |
-| Orchestration          | Kubernetes     |
-| Kubernetes             | Amazon EKS     |
-| Infrastructure as Code | Terraform      |
-| CI/CD                  | GitHub Actions |
-| Metrics                | Prometheus     |
-| Visualization          | Grafana        |
-| Logging                | Loki           |
-| Tracing                | Tempo          |
-| Telemetry              | OpenTelemetry  |
-| Version Control        | Git & GitHub   |
+| Category | Technology |
+| --- | --- |
+| Backend | FastAPI |
+| Application Server | Uvicorn |
+| Language | Python 3.12 |
+| Database | PostgreSQL / Amazon RDS |
+| Package Management | uv |
+| Cloud Platform | AWS |
+| Containers | Docker |
+| Container Registry | Amazon ECR |
+| Orchestration | Kubernetes |
+| Managed Kubernetes | Amazon EKS |
+| Kubernetes Packaging | Helm |
+| Infrastructure as Code | Terraform |
+| CI/CD | GitHub Actions |
+| DNS | Amazon Route 53 |
+| TLS | AWS Certificate Manager |
+| Load Balancing | AWS Elastic Load Balancing |
+| Persistent Storage | Amazon EBS / EBS CSI Driver |
+| Metrics | Prometheus |
+| Visualization | Grafana |
+| Logging | Loki |
+| Tracing | Tempo |
+| Telemetry | OpenTelemetry |
+| Version Control | Git & GitHub |
+
 
 ---
 
 # Infrastructure as Code
 
-Terraform is used to define and provision AWS infrastructure.
+AWS infrastructure is managed with Terraform.
 
-Infrastructure as Code allows cloud resources to be managed through version-controlled configuration rather than manual console changes.
+The Terraform configuration is separated into reusable modules:
 
-The Terraform configuration includes infrastructure such as:
-
-* VPC networking
-* Public and private subnets
-* Route tables
-* Internet connectivity
-* Security groups
-* Amazon EKS
-* EKS managed node groups
-* IAM roles and permissions
-* Amazon RDS
+```text
+infra/
+├── backend.tf
+├── providers.tf
+├── variables.tf
+├── output.tf
+├── main.tf
+└── modules/
+    ├── network/
+    ├── eks/
+    ├── database/
+    └── observability/
+```
 
 This makes the infrastructure repeatable, reviewable, and easier to reproduce.
 
@@ -428,28 +369,33 @@ Application functionality includes:
 
 ```text
 journal-starter/
-|
+│
 ├── .github/
-│   └── workflows/          # GitHub Actions CI/CD
+│   └── workflows/              # GitHub Actions workflows
 │
-├── api/                    # FastAPI application
+├── api/                        # FastAPI application
 │
-├── k8s/                    # Kubernetes manifests
+├── bootstrap/                  # Terraform remote-state bootstrap
 │
-├── bootstrap/              # Terraform remote-state infrastructure
-│           
-├── infra/                  # Infrastructure as Code
+├── infra/                      # AWS Terraform configuration
+│   └── modules/
+│       ├── network/
+│       ├── eks/
+│       ├── database/
+│       └── observability/
 │
-├── tests/                  # Automated application tests
+├── k8s/                        # Kubernetes manifests
+│   ├── aws/                    # AWS/Kubernetes integration
+│   └── observability/          # Observability configuration
 │
-├── scripts/                # Deployment/support scripts
+├── tests/                      # Automated tests
 │
-├── Dockerfile              # Application container image
+├── scripts/                    # Deployment/support scripts
 │
-├── database_setup.sql      # PostgreSQL initialization
-│
-├── pyproject.toml          # Python project configuration
-│
+├── Dockerfile                  # Production container image
+├── database_setup.sql          # PostgreSQL initialization
+├── pyproject.toml              # Python project configuration
+├── uv.lock                     # Locked Python dependencies
 └── README.md
 ```
 
@@ -523,6 +469,18 @@ This project demonstrates hands-on implementation of:
 * Dashboards
 * Alerting
 * OpenTelemetry
+
+---
+
+# Project Attribution
+
+This project is based on the **Learn to Cloud Journal Starter** repository.
+
+The starter repository provided the initial FastAPI journal application used as the foundation for the project.
+
+I extended the application with additional API functionality, validation, logging, AI integration, automated testing, and code-quality improvements before evolving it into the cloud and DevOps platform documented here.
+
+The infrastructure, containerization, AWS deployment architecture, Terraform configuration, Kubernetes platform, CI/CD pipeline, HTTPS/DNS integration, persistent storage, and observability implementation represent the broader cloud and DevOps engineering work completed as part of this project.
 
 ---
 
