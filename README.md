@@ -11,6 +11,14 @@ The final architecture uses Docker, Amazon ECR, Amazon EKS, Amazon RDS, Terrafor
 
 ---
 
+# Journal API
+
+<p align="center">
+  <img src="docs/Journal API Application.png" alt="AWS Two-Tier Architecture" width="1000">
+</p>
+
+--- 
+
 # Architecture
 
 <br>
@@ -111,41 +119,33 @@ The `/health` endpoint is used by Kubernetes health probes, while `/metrics` exp
 
 # CI/CD Pipeline
 
-GitHub Actions provides the project's continuous integration and continuous deployment pipeline.
+<p align="center">
+  <img src="docs/CI.png" alt="Grafana Kubernetes API Server" width="49%">
+  <img src="docs/Deploy.png" alt="Journal API" width="49%">
+</p>
 
-### Continuous Integration
+GitHub Actions automates application validation, container deployment, and Terraform infrastructure workflows.
 
-The CI stage validates application changes using:
+### Application CI
 
-* pytest
-* Ruff
-* Pyright
-* PostgreSQL test database
+The **CI** workflow runs:
 
-### Container Build
+* Linting and code-quality checks
+* Automated tests with PostgreSQL
+* Docker image build validation
 
-After validation, GitHub Actions:
+### Application Deployment
 
-```text
-Dockerfile
-    |
-    v
-Docker Build
-    |
-    v
-Docker Image
-    |
-    v
-Amazon ECR
-```
+The **Deploy** workflow builds and pushes the production Docker image to **Amazon ECR**, then deploys the application to **Amazon EKS**.
 
-### Continuous Deployment
+### Terraform CI/CD
 
-After the image is pushed to ECR, the deployment stage authenticates with AWS, connects to Amazon EKS, and applies the Kubernetes manifests.
+The **Terraform CI** workflow validates and plans infrastructure changes, while **Terraform Apply** applies approved changes to AWS.
 
-Kubernetes then performs the application rollout across the EKS worker nodes.
+### AWS Authentication
 
-AWS authentication from GitHub Actions uses **OpenID Connect (OIDC)** rather than long-lived AWS access keys.
+GitHub Actions uses **OpenID Connect (OIDC)** and IAM roles to authenticate with AWS without storing long-lived AWS access keys.
+
 
 ---
 
