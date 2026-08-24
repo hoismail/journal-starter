@@ -8,13 +8,6 @@ The project covers the full application and infrastructure lifecycle, including 
 
 The final architecture uses Docker, Amazon ECR, Amazon EKS, Amazon RDS, Terraform, GitHub Actions, and the LGTM observability stack with OpenTelemetry.
 
----
-
-## Journal API
-
-<p align="center">
-  <img src="docs/Journal API Application.png" alt="AWS Two-Tier Architecture" width="1000">
-</p>
 
 ---
 
